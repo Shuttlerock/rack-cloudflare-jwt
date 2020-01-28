@@ -1,0 +1,33 @@
+defaults: &defaults
+  working_directory: ~/rack-cloudflare-jwt
+  docker:
+    - image: circleci/ruby:2.6.5
+
+version: 2.1
+jobs:
+  rubocop_test:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: bundle --path vendor/bundle
+      - run:
+          name: Rubocop
+          command: bundle exec rubocop
+
+  rspec_tests:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: bundle --path vendor/bundle
+      - run:
+          name: RSpec
+          command: bundle exec rake
+
+      - store_artifacts:
+          path: coverage
+
+workflows:
+  build:
+    jobs:
+      - rubocop_test
+      - rspec_tests
