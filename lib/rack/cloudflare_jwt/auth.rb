@@ -84,6 +84,8 @@ module Rack
         end
 
         if decoded_token
+          Rails.logger.debug 'CloudFlare JWT token is valid'
+
           env['jwt.payload'] = decoded_token.first
           env['jwt.header']  = decoded_token.last
           @app.call(env)
