@@ -172,7 +172,8 @@ module Rack
       # @return [Array<OpenSSL::PKey::RSA>] the public keys.
       def public_keys(env)
         host = env[HEADER_HTTP_HOST]
-        keys = cache.fetch([self.class.name, '#secrets', host]) { fetch_public_keys(host) }
+        # Store a keys in the cache only 10 minutes.
+        keys = cache.fetch([self.class.name, '#secrets', host], expires_in: 600) { fetch_public_keys(host) }
         keys.map do |jwk_data|
           ::JWT::JWK.import(jwk_data).keypair
         end
