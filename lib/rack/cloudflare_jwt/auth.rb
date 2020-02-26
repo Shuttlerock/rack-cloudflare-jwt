@@ -11,12 +11,17 @@ module Rack
     #
     # @see https://developers.cloudflare.com/access/setting-up-access/validate-jwt-tokens/
     class Auth
+      # Custom decode token error.
+      class DecodeTokenError < StandardError; end
+
       # Certs path
       CERTS_PATH = '/cdn-cgi/access/certs'
       # Default algorithm
       DEFAULT_ALGORITHM = 'RS256'
       # CloudFlare JWT header.
       HEADER_NAME = 'HTTP_CF_ACCESS_JWT_ASSERTION'
+      # HTTP_HOST header.
+      HEADER_HTTP_HOST = 'HTTP_HOST'
 
       # Token regex.
       #
@@ -79,12 +84,14 @@ module Rack
         # extract the token from header.
         token         = env[HEADER_NAME]
         decoded_token = public_keys(env).find do |key|
-          dt = decode_token(token, key.public_key)
-          break dt if dt
+          break decode_token(token, key.public_key)
+        rescue DecodeTokenError => e
+          logger.info e.message
+          nil
         end
 
         if decoded_token
-          Rails.logger.debug 'CloudFlare JWT token is valid'
+          logger.debug 'CloudFlare JWT token is valid'
 
           env['jwt.payload'] = decoded_token.first
           env['jwt.header']  = decoded_token.last
@@ -103,30 +110,32 @@ module Rack
       #     {"alg"=>"RS256"} # header
       #   ]
       #
-      # @return [Array<Hash>] the token.
+      # @return [Array<Hash>] the token or `nil` at error.
+      # @raise [DecodeTokenError] if the token is invalid.
+      #
       # @see https://github.com/jwt/ruby-jwt/tree/v2.2.1#algorithms-and-usage
       def decode_token(token, secret)
         Rack::JWT::Token.decode(token, secret, true, aud: policy_aud, verify_aud: true, algorithm: DEFAULT_ALGORITHM)
       rescue ::JWT::VerificationError
-        Rails.logger.info 'Invalid JWT token : Signature Verification Error'
+        raise DecodeTokenError, 'Invalid JWT token : Signature Verification Error'
       rescue ::JWT::ExpiredSignature
-        Rails.logger.info 'Invalid JWT token : Expired Signature (exp)'
+        raise DecodeTokenError, 'Invalid JWT token : Expired Signature (exp)'
       rescue ::JWT::IncorrectAlgorithm
-        Rails.logger.info 'Invalid JWT token : Incorrect Key Algorithm'
+        raise DecodeTokenError, 'Invalid JWT token : Incorrect Key Algorithm'
       rescue ::JWT::ImmatureSignature
-        Rails.logger.info 'Invalid JWT token : Immature Signature (nbf)'
+        raise DecodeTokenError, 'Invalid JWT token : Immature Signature (nbf)'
       rescue ::JWT::InvalidIssuerError
-        Rails.logger.info 'Invalid JWT token : Invalid Issuer (iss)'
+        raise DecodeTokenError, 'Invalid JWT token : Invalid Issuer (iss)'
       rescue ::JWT::InvalidIatError
-        Rails.logger.info 'Invalid JWT token : Invalid Issued At (iat)'
+        raise DecodeTokenError, 'Invalid JWT token : Invalid Issued At (iat)'
       rescue ::JWT::InvalidAudError
-        Rails.logger.info 'Invalid JWT token : Invalid Audience (aud)'
+        raise DecodeTokenError, 'Invalid JWT token : Invalid Audience (aud)'
       rescue ::JWT::InvalidSubError
-        Rails.logger.info 'Invalid JWT token : Invalid Subject (sub)'
+        raise DecodeTokenError, 'Invalid JWT token : Invalid Subject (sub)'
       rescue ::JWT::InvalidJtiError
-        Rails.logger.info 'Invalid JWT token : Invalid JWT ID (jti)'
+        raise DecodeTokenError, 'Invalid JWT token : Invalid JWT ID (jti)'
       rescue ::JWT::DecodeError
-        Rails.logger.info 'Invalid JWT token : Decode Error'
+        raise DecodeTokenError, 'Invalid JWT token : Decode Error'
       end
 
       # Private: Check if current path is in the include_paths.
@@ -162,8 +171,8 @@ module Rack
       #
       # @return [Array<OpenSSL::PKey::RSA>] the public keys.
       def public_keys(env)
-        host = env['HTTP_HOST']
-        keys = Rails.cache.fetch([self.class.name, '#secrets', host]) { fetch_public_keys(host) }
+        host = env[HEADER_HTTP_HOST]
+        keys = cache.fetch([self.class.name, '#secrets', host]) { fetch_public_keys(host) }
         keys.map do |jwk_data|
           ::JWT::JWK.import(jwk_data).keypair
         end
@@ -176,9 +185,23 @@ module Rack
       # @return [Array<Hash>] the public keys.
       def fetch_public_keys(host)
         json = Net::HTTP.get(host, CERTS_PATH)
-        json.present? ? MultiJson.load(json, symbolize_keys: true).fetch(:keys) : []
+        json.empty? ? [] : MultiJson.load(json, symbolize_keys: true).fetch(:keys)
       rescue StandardError
         []
+      end
+
+      # Private: Get a cache store.
+      #
+      # @return [ActiveSupport::Cache::Store] the cache store.
+      def cache
+        Rails.cache
+      end
+
+      # Private: Get a logger.
+      #
+      # @return [ActiveSupport::Logger] the logger.
+      def logger
+        Rails.logger
       end
     end
   end
