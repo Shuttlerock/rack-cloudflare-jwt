@@ -6,6 +6,7 @@ SimpleCov.start do
 end
 
 require 'rspec'
+require 'webmock/rspec'
 require 'rack/test'
 require 'rack/cloudflare_jwt'
 
