@@ -172,9 +172,7 @@ module Rack
       # @return [Array<OpenSSL::PKey::RSA>] the public keys.
       def public_keys(env)
         host = env[HEADER_HTTP_HOST]
-        # Store a keys in the cache only 10 minutes.
-        keys = cache.fetch([self.class.name, '#secrets', host], expires_in: 600) { fetch_public_keys(host) }
-        keys.map do |jwk_data|
+        fetch_public_keys_cached(host).map do |jwk_data|
           ::JWT::JWK.import(jwk_data).keypair
         end
       end
@@ -191,18 +189,35 @@ module Rack
         []
       end
 
-      # Private: Get a cache store.
+      # Private: Get cached public keys.
       #
-      # @return [ActiveSupport::Cache::Store] the cache store.
-      def cache
-        Rails.cache
+      # Store a keys in the cache only 10 minutes.
+      #
+      # @param host [String] The host.
+      #
+      # @return [Array<Hash>] the public keys.
+      def fetch_public_keys_cached(host)
+        key = [self.class.name, '#secrets', host].join('_')
+
+        if defined? Rails
+          Rails.cache.fetch(key, expires_in: 600) { fetch_public_keys(host) }
+        elsif defined? Padrino
+          keys = Padrino.cache[key]
+          keys || Padrino.cache.store(key, fetch_public_keys(host), expires: 600)
+        else
+          fetch_public_keys(host)
+        end
       end
 
       # Private: Get a logger.
       #
       # @return [ActiveSupport::Logger] the logger.
       def logger
-        Rails.logger
+        if defined? Rails
+          Rails.logger
+        elsif defined? Padrino
+          Padrino.logger
+        end
       end
     end
   end
