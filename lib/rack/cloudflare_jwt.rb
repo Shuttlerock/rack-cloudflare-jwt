@@ -2,9 +2,8 @@
 
 require 'rack/cloudflare_jwt/version'
 
-module Rack
+module Rack::CloudflareJwt
   # CloudFlare JSON Web Token
-  module CloudflareJwt
-    autoload :Auth, 'rack/cloudflare_jwt/auth'
-  end
+
+  autoload :Auth, 'rack/cloudflare_jwt/auth'
 end
