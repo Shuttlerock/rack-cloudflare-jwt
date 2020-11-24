@@ -2,6 +2,9 @@ defaults: &defaults
   working_directory: ~/rack-cloudflare-jwt
   docker:
     - image: circleci/ruby:2.6.5
+      auth:
+        username: $DOCKERHUB_USERNAME
+        password: $DOCKERHUB_PASSWORD
 
 version: 2.1
 jobs:
@@ -29,5 +32,9 @@ jobs:
 workflows:
   build:
     jobs:
-      - rubocop_test
-      - rspec_tests
+      - rubocop_test:
+          context:
+            - docker-hub-creds
+      - rspec_tests:
+          context:
+            - docker-hub-creds
