@@ -1,9 +1,11 @@
 # See example at https://github.com/bbatsov/rubocop/blob/master/config/default.yml
 require:
   - rubocop-performance
+  - rubocop-rspec
 
 AllCops:
   TargetRubyVersion: 2.6
+  NewCops: enable
 
 # Align the elements of a hash literal if they span more than one line.
 Layout/HashAlignment:
@@ -35,44 +37,11 @@ Layout/HashAlignment:
 Style/Documentation:
   Enabled: false
 
-Layout/BeginEndAlignment:
-  Enabled: true
-
 Layout/EmptyLines:
   Enabled: false
 
 Layout/LineLength:
   Max: 150
-
-Lint/BinaryOperatorWithIdenticalOperands:
-  Enabled: true
-
-Lint/DuplicateElsifCondition:
-  Enabled: true
-
-Lint/DuplicateRescueException:
-  Enabled: true
-
-Lint/EmptyConditionalBody:
-  Enabled: true
-
-Lint/FloatComparison:
-  Enabled: true
-
-Lint/MissingSuper:
-  Enabled: true
-
-Lint/OutOfRangeRegexpRef:
-  Enabled: true
-
-Lint/SelfAssignment:
-  Enabled: true
-
-Lint/TopLevelReturnWithArgument:
-  Enabled: true
-
-Lint/UnreachableLoop:
-  Enabled: true
 
 Metrics/AbcSize:
   Enabled: true
@@ -86,6 +55,10 @@ Metrics/BlockLength:
   Enabled:       false
   CountComments: false
 
+Metrics/CyclomaticComplexity:
+  Enabled: true
+  Max:     10
+
 Metrics/MethodLength:
   Enabled:       true
   CountComments: false
@@ -97,45 +70,8 @@ Naming/MethodParameterName:
 Naming/BlockParameterName:
   MinNameLength: 2
 
-Lint/ConstantDefinitionInBlock:
-  Enabled: true
-
-Lint/DeprecatedOpenSSLConstant:
-  Enabled: true
-
-Lint/DuplicateRequire:
-  Enabled: true
-
 Layout/EmptyLinesAroundBlockBody:
   Enabled: false
-
-Layout/EmptyLinesAroundAttributeAccessor:
-  Enabled: true
-
-Lint/EmptyFile:
-  Enabled: true
-
-Lint/IdentityComparison:
-  Enabled: true
-
-Lint/MixedRegexpCaptureTypes:
-  Enabled: false
-
-Lint/TrailingCommaInAttributeDeclaration:
-  Enabled: true
-
-Lint/UselessMethodDefinition:
-  Enabled: true
-
-Lint/UselessTimes:
-  Enabled: true
-
-Layout/BeginEndAlignment:
-  Enabled: true
-
-#Checks method call operators to not have spaces around them.
-Layout/SpaceAroundMethodCallOperator:
-  Enabled: true
 
 Layout/SpaceInsideParens:
   Enabled: false
@@ -143,126 +79,21 @@ Layout/SpaceInsideParens:
 Layout/SpaceBeforeFirstArg:
   Enabled: false
 
-Lint/RaiseException:
-  Enabled: true
-
-Lint/StructNewOverride:
-  Enabled: true
-
-Performance/AncestorsInclude:
-  Enabled: true
-
-Performance/BigDecimalWithNumericArgument:
-  Enabled: true
-
-Performance/RedundantSortBlock:
-  Enabled: true
-
-Performance/RedundantStringChars:
-  Enabled: true
-
-Performance/ReverseFirst:
-  Enabled: true
-
-Performance/SortReverse:
-  Enabled: true
-
-Performance/Squeeze:
-  Enabled: true
-
-Performance/StringInclude:
-  Enabled: true
-
 Style/AccessModifierDeclarations:
   Enabled: false
 
-Style/AccessorGrouping:
-  Enabled: true
-
-Style/ArrayCoercion:
-  Enabled: true
-
-Style/BisectedAttrAccessor:
-  Enabled: true
-
 Style/BlockDelimiters:
   Enabled: false
-
-Style/CaseLikeIf:
-  Enabled: true
 
 Style/ClassAndModuleChildren:
   Enabled:       true
   EnforcedStyle: compact
 
-Style/CombinableLoops:
-  Enabled: true
-
-Style/ExplicitBlockArgument:
-  Enabled: true
-
-Style/ExponentialNotation:
-  Enabled: false
-
 Style/FrozenStringLiteralComment:
   Enabled: false
 
-Style/GlobalStdStream:
-  Enabled: true
-
-Style/HashAsLastArrayItem:
-  Enabled: true
-
-Style/HashEachMethods:
-  Enabled: true
-
-Style/HashLikeCase:
-  Enabled: true
-
-Style/HashTransformKeys:
-  Enabled: true
-
-Style/HashTransformValues:
-  Enabled: true
-
-Style/KeywordParametersOrder:
-  Enabled: true
-
-Style/OptionalBooleanParameter:
-  Enabled: true
-
-Style/RedundantAssignment:
-  Enabled: true
-
-Style/RedundantSelfAssignment:
-  Enabled: true
-
-Style/RedundantFetchBlock:
-  Enabled: true
-
-Style/RedundantFileExtensionInRequire:
-  Enabled: true
-
 Style/RedundantReturn:
   Enabled: false
-
-Style/RedundantRegexpCharacterClass:
-  Enabled: true
-
-Style/RedundantRegexpEscape:
-  Enabled: false
-
-Style/SingleArgumentDig:
-  Enabled: true
-
-Style/SlicingWithRange:
-  Enabled: true
-
-Style/SoleNestedConditional:
-  Enabled: true
-
-Style/StringConcatenation:
-  Enabled: true
 
 Style/TrailingCommaInArguments:
   Enabled:                   true
@@ -283,3 +114,9 @@ Style/AndOr:
 # We use %w[ ], not %w( ) because the former looks like an array
 Style/PercentLiteralDelimiters:
   Enabled: false
+
+RSpec/MessageSpies:
+  EnforcedStyle: receive
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10

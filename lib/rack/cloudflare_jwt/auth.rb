@@ -21,33 +21,43 @@ module Rack::CloudflareJwt
     HEADER_NAME = 'HTTP_CF_ACCESS_JWT_ASSERTION'
     # HTTP_HOST header.
     HEADER_HTTP_HOST = 'HTTP_HOST'
+    # Key for get current path.
+    PATH_INFO = 'PATH_INFO'
 
     # Token regex.
     #
     # @see https://github.com/jwt/ruby-jwt/tree/v2.2.1#algorithms-and-usage
     TOKEN_REGEX = /
       ^(
-      [a-zA-Z0-9\-\_]+\.  # 1 or more chars followed by a single period
-      [a-zA-Z0-9\-\_]+\.  # 1 or more chars followed by a single period
-      [a-zA-Z0-9\-\_]+    # 1 or more chars, no trailing chars
+      [a-zA-Z0-9\-_]+\.  # 1 or more chars followed by a single period
+      [a-zA-Z0-9\-_]+\.  # 1 or more chars followed by a single period
+      [a-zA-Z0-9\-_]+    # 1 or more chars, no trailing chars
       )$
     /x.freeze
 
-    attr_reader :policy_aud, :include_paths
+    attr_reader :policies
 
     # Initializes middleware
-    def initialize(app, opts = {})
-      @app           = app
-      @policy_aud    = opts.fetch(:policy_aud, nil)
-      @include_paths = opts.fetch(:include_paths, [])
+    #
+    # @example Initialize middleware in Rails
+    #   config.middleware.use(
+    #     Rack::CloudflareJwt::Auth,
+    #     '/admin'   => <cloudflare-aud-1>,
+    #     '/manager' => <cloudflare-aud-2>,
+    #   )
+    #
+    # @param policies [Hash<String, String>] the policies with paths and AUDs.
+    def initialize(app, policies = {})
+      @app      = app
+      @policies = policies
 
-      check_policy_aud!
-      check_include_paths_type!
+      check_policy_auds!
+      check_paths_type!
     end
 
     # Public: Call a middleware.
     def call(env)
-      if !path_matches_include_paths?(env)
+      if !path_matches?(env)
         @app.call(env)
       elsif missing_auth_header?(env)
         return_error('Missing Authorization header')
@@ -60,21 +70,23 @@ module Rack::CloudflareJwt
 
     private
 
-    # Private: Check policy aud.
-    def check_policy_aud!
-      return unless !policy_aud.is_a?(String) || policy_aud.strip.empty?
+    # Private: Check policy auds.
+    def check_policy_auds!
+      raise ArgumentError, 'policies cannot be nil/empty' if policies.values.empty?
 
-      raise ArgumentError, 'policy_aud argument cannot be nil/empty'
+      policies.each_value do |policy_aud|
+        next unless !policy_aud.is_a?(String) || policy_aud.strip.empty?
+
+        raise ArgumentError, 'policy AUD argument cannot be nil/empty'
+      end
     end
 
-    # Private: Check include_paths type.
-    def check_include_paths_type!
-      raise ArgumentError, 'include_paths argument must be an Array' unless include_paths.is_a?(Array)
-
-      include_paths.each do |path|
-        raise ArgumentError, 'each include_paths Array element must be a String' unless path.is_a?(String)
-        raise ArgumentError, 'each include_paths Array element must not be empty' if path.empty?
-        raise ArgumentError, 'each include_paths Array element must start with a /' unless path.start_with?('/')
+    # Private: Check paths type.
+    def check_paths_type!
+      policies.each_key do |path|
+        raise ArgumentError, 'each key element must be a String' unless path.is_a?(String)
+        raise ArgumentError, 'each key element must not be empty' if path.empty?
+        raise ArgumentError, 'each key element must start with a /' unless path.start_with?('/')
       end
     end
 
@@ -82,8 +94,9 @@ module Rack::CloudflareJwt
     def verify_token(env)
       # extract the token from header.
       token         = env[HEADER_NAME]
+      policy_aud    = policies.find { |path, _aud| env[PATH_INFO].start_with?(path) }&.last
       decoded_token = public_keys(env).find do |key|
-        break decode_token(token, key.public_key)
+        break decode_token(token, key.public_key, policy_aud)
       rescue DecodeTokenError => e
         logger.info e.message
         nil
@@ -102,7 +115,11 @@ module Rack::CloudflareJwt
 
     # Private: Decode a token.
     #
-    # Example:
+    # @param token [String] the token.
+    # @param secret [String] the public key.
+    # @param policy_aud [String] the CloudFlare AUD.
+    #
+    # @example
     #
     #   [
     #     {"data"=>"test"}, # payload
@@ -113,7 +130,7 @@ module Rack::CloudflareJwt
     # @raise [DecodeTokenError] if the token is invalid.
     #
     # @see https://github.com/jwt/ruby-jwt/tree/v2.2.1#algorithms-and-usage
-    def decode_token(token, secret)
+    def decode_token(token, secret, policy_aud)
       Rack::JWT::Token.decode(token, secret, true, aud: policy_aud, verify_aud: true, algorithm: DEFAULT_ALGORITHM)
     rescue ::JWT::VerificationError
       raise DecodeTokenError, 'Invalid JWT token : Signature Verification Error'
@@ -137,11 +154,11 @@ module Rack::CloudflareJwt
       raise DecodeTokenError, 'Invalid JWT token : Decode Error'
     end
 
-    # Private: Check if current path is in the include_paths.
+    # Private: Check if current path is in the policies.
     #
     # @return [Boolean] true if it is, false otherwise.
-    def path_matches_include_paths?(env)
-      include_paths.empty? || include_paths.any? { |ex| env['PATH_INFO'].start_with?(ex) }
+    def path_matches?(env)
+      policies.empty? || policies.keys.any? { |ex| env[PATH_INFO].start_with?(ex) }
     end
 
     # Private: Check if auth header is invalid.
