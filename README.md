@@ -34,7 +34,7 @@ $ gem install rack-cloudflare-jwt
 
 `Rack::CloudflareJwt::Auth` accepts configuration options. All options are passed in a single Ruby `Hash<String, String>`. E.g. `{ '/admin' => 'aud-1', '/manager' => 'aud-2' }`.
 
-* `Hash` key : `String` : A path string representing paths that should be checked for the presence of a valid JWT token. Includes sub-paths as of specified path as well (e.g. `/docs` includes `/docs/some/thing.html` also). Each path should start with a `/`. If a path not matches the current request path this entire middleware is skipped and no authentication or verification of tokens takes place.
+* `Hash` key : `String` : A path string representing paths that should be checked for the presence of a valid JWT token. Includes sub-paths as of specified path as well (e.g. `/docs` includes `/docs/some/thing.html` also). Each path should start with a `/`. If a path doesn't matches the current request path this entire middleware is skipped and no authentication or verification of tokens takes place.
 
 * `Hash` value : `String` : A Application Audience (AUD) Tag.
 
