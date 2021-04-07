@@ -19,8 +19,6 @@ module Rack::CloudflareJwt
     DEFAULT_ALGORITHM = 'RS256'
     # CloudFlare JWT header.
     HEADER_NAME = 'HTTP_CF_ACCESS_JWT_ASSERTION'
-    # HTTP_HOST header.
-    HEADER_HTTP_HOST = 'HTTP_HOST'
     # Key for get current path.
     PATH_INFO = 'PATH_INFO'
 
@@ -35,21 +33,25 @@ module Rack::CloudflareJwt
       )$
     /x.freeze
 
-    attr_reader :policies
+    attr_reader :policies, :team_domain
 
     # Initializes middleware
     #
     # @example Initialize middleware in Rails
     #   config.middleware.use(
     #     Rack::CloudflareJwt::Auth,
+    #     team_domain:  ENV['RACK_CLOUDFLARE_JWT_TEAM_DOMAIN']
     #     '/admin'   => <cloudflare-aud-1>,
     #     '/manager' => <cloudflare-aud-2>,
     #   )
     #
-    # @param policies [Hash<String, String>] the policies with paths and AUDs.
-    def initialize(app, policies = {})
-      @app      = app
-      @policies = policies
+    # @param [Hash<String, String>] options the options to create a middleware.
+    # @option options [Symbol] :team_domain The Team Domain (e.g. 'test.cloudflareaccess.com')
+    # @option options [String] '<path>' The AUD for current '<path>'.
+    def initialize(app, options = {})
+      @app         = app
+      @team_domain = options.delete(:team_domain)
+      @policies    = options
 
       check_policy_auds!
       check_paths_type!
@@ -95,7 +97,7 @@ module Rack::CloudflareJwt
       # extract the token from header.
       token         = env[HEADER_NAME]
       policy_aud    = policies.find { |path, _aud| env[PATH_INFO].start_with?(path) }&.last
-      decoded_token = public_keys(env).find do |key|
+      decoded_token = public_keys.find do |key|
         break decode_token(token, key.public_key, policy_aud)
       rescue DecodeTokenError => e
         logger.info e.message
@@ -186,20 +188,17 @@ module Rack::CloudflareJwt
     # Private: Get public keys.
     #
     # @return [Array<OpenSSL::PKey::RSA>] the public keys.
-    def public_keys(env)
-      host = env[HEADER_HTTP_HOST]
-      fetch_public_keys_cached(host).map do |jwk_data|
+    def public_keys
+      fetch_public_keys_cached.map do |jwk_data|
         ::JWT::JWK.import(jwk_data).keypair
       end
     end
 
     # Private: Fetch public keys.
     #
-    # @param host [String] The host.
-    #
     # @return [Array<Hash>] the public keys.
-    def fetch_public_keys(host)
-      json = Net::HTTP.get(host, CERTS_PATH)
+    def fetch_public_keys
+      json = Net::HTTP.get(team_domain, CERTS_PATH)
       json.empty? ? [] : MultiJson.load(json, symbolize_keys: true).fetch(:keys)
     rescue StandardError
       []
@@ -209,19 +208,17 @@ module Rack::CloudflareJwt
     #
     # Store a keys in the cache only 10 minutes.
     #
-    # @param host [String] The host.
-    #
     # @return [Array<Hash>] the public keys.
-    def fetch_public_keys_cached(host)
-      key = [self.class.name, '#secrets', host].join('_')
+    def fetch_public_keys_cached
+      key = [self.class.name, '#secrets'].join('_')
 
       if defined? Rails
-        Rails.cache.fetch(key, expires_in: 600) { fetch_public_keys(host) }
+        Rails.cache.fetch(key, expires_in: 600) { fetch_public_keys }
       elsif defined? Padrino
         keys = Padrino.cache[key]
-        keys || Padrino.cache.store(key, fetch_public_keys(host), expires: 600)
+        keys || Padrino.cache.store(key, fetch_public_keys, expires: 600)
       else
-        fetch_public_keys(host)
+        fetch_public_keys
       end
     end
 

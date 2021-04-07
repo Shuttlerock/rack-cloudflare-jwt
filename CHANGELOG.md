@@ -1,5 +1,11 @@
 # Change log
 
+## 0.2.0
+
+### Breaking Changes:
+
+* Security vulnerability: Allow to set Team Domain #8, thanks @JackDanger
+
 ## 0.1.0 (2021-03-10)
 
 ### Enhancements:
