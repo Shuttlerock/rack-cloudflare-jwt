@@ -5,72 +5,73 @@ require 'spec_helper'
 describe Rack::CloudflareJwt::Auth do
   let(:policy_aud) { 'xxx' }
   let(:payload)    { { foo: 'bar' } }
+  let(:team_domain) { 'test.cloudflareaccess.com' }
 
   let(:inner_app) do
     ->(env) { [200, env, [payload.to_json]] }
   end
 
   let(:app) do
-    described_class.new(inner_app, '/' => policy_aud)
+    described_class.new(inner_app, team_domain: team_domain, '/' => policy_aud)
   end
 
-  describe 'initialization of #policies' do
+  describe 'initialization of #policies and #team_domain' do
     describe 'with policy auds: arg provided' do
-      let(:args) { { '/admin' => 'aud-1', '/manager' => 'aud-2' } }
+      let(:policies) { { '/admin' => 'aud-1', '/manager' => 'aud-2' } }
+      let(:args) { policies.merge(team_domain: team_domain) }
       let(:app) { described_class.new(inner_app, args) }
 
-      it 'succeeds' do
-        expect(app.policies).to eq args
-      end
+      it { expect(app.policies).to eq policies }
+      it { expect(app.team_domain).to eq team_domain }
     end
 
     describe 'with no policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, {}) }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain: team_domain) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with policy auds: arg of invalid type' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, '/' => []) }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain: team_domain, '/' => []) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with nil policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, '/' => nil) }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain: team_domain, '/' => nil) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with empty policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, '/' => '') }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain: team_domain, '/' => '') }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with spaces policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, '/' => '     ') }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain: team_domain, '/' => '     ') }.to raise_error(ArgumentError)
       end
     end
 
     describe 'when Hash keys contains non-String elements' do
       it 'raises an exception' do
-        args = { %w[/foo /bar] => policy_aud }
+        args = { team_domain: team_domain, %w[/foo /bar] => policy_aud }
         expect { described_class.new(inner_app, args) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'when Hash keys contains empty String elements' do
       it 'raises an exception' do
-        args = { '' => policy_aud }
+        args = { team_domain: team_domain, '' => policy_aud }
         expect { described_class.new(inner_app, args) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'when Hash keys contains elements that do not start with a /' do
       it 'raises an exception' do
-        args = { 'bar' => policy_aud }
+        args = { team_domain: team_domain, 'bar' => policy_aud }
         expect { described_class.new(inner_app, args) }.to raise_error(ArgumentError)
       end
     end
@@ -153,8 +154,7 @@ describe Rack::CloudflareJwt::Auth do
     end
 
     it 'returns a keys' do
-      expect(app.send(:public_keys, described_class::HEADER_HTTP_HOST => 'example.com')).to contain_exactly(instance_of(OpenSSL::PKey::RSA),
-                                                                                                            instance_of(OpenSSL::PKey::RSA))
+      expect(app.send(:public_keys)).to contain_exactly(instance_of(OpenSSL::PKey::RSA), instance_of(OpenSSL::PKey::RSA))
     end
   end
 end
