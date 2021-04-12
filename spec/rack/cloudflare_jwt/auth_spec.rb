@@ -12,14 +12,13 @@ describe Rack::CloudflareJwt::Auth do
   end
 
   let(:app) do
-    described_class.new(inner_app, team_domain: team_domain, '/' => policy_aud)
+    described_class.new(inner_app, team_domain, '/' => policy_aud)
   end
 
   describe 'initialization of #policies and #team_domain' do
     describe 'with policy auds: arg provided' do
       let(:policies) { { '/admin' => 'aud-1', '/manager' => 'aud-2' } }
-      let(:args) { policies.merge(team_domain: team_domain) }
-      let(:app) { described_class.new(inner_app, args) }
+      let(:app) { described_class.new(inner_app, team_domain, policies) }
 
       it { expect(app.policies).to eq policies }
       it { expect(app.team_domain).to eq team_domain }
@@ -27,52 +26,52 @@ describe Rack::CloudflareJwt::Auth do
 
     describe 'with no policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, team_domain: team_domain) }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with policy auds: arg of invalid type' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, team_domain: team_domain, '/' => []) }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain, '/' => []) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with nil policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, team_domain: team_domain, '/' => nil) }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain, '/' => nil) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with empty policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, team_domain: team_domain, '/' => '') }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain, '/' => '') }.to raise_error(ArgumentError)
       end
     end
 
     describe 'with spaces policy auds: arg provided' do
       it 'raises ArgumentError' do
-        expect { described_class.new(inner_app, team_domain: team_domain, '/' => '     ') }.to raise_error(ArgumentError)
+        expect { described_class.new(inner_app, team_domain, '/' => '     ') }.to raise_error(ArgumentError)
       end
     end
 
     describe 'when Hash keys contains non-String elements' do
       it 'raises an exception' do
-        args = { team_domain: team_domain, %w[/foo /bar] => policy_aud }
-        expect { described_class.new(inner_app, args) }.to raise_error(ArgumentError)
+        args = [team_domain, { %w[/foo /bar] => policy_aud }]
+        expect { described_class.new(inner_app, *args) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'when Hash keys contains empty String elements' do
       it 'raises an exception' do
-        args = { team_domain: team_domain, '' => policy_aud }
-        expect { described_class.new(inner_app, args) }.to raise_error(ArgumentError)
+        args = [team_domain, { '' => policy_aud }]
+        expect { described_class.new(inner_app, *args) }.to raise_error(ArgumentError)
       end
     end
 
     describe 'when Hash keys contains elements that do not start with a /' do
       it 'raises an exception' do
-        args = { team_domain: team_domain, 'bar' => policy_aud }
-        expect { described_class.new(inner_app, args) }.to raise_error(ArgumentError)
+        args = [team_domain, { 'bar' => policy_aud }]
+        expect { described_class.new(inner_app, *args) }.to raise_error(ArgumentError)
       end
     end
   end

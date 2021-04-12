@@ -38,14 +38,14 @@ $ gem install rack-cloudflare-jwt
 
 * `Hash` value : `String` : A Application Audience (AUD) Tag.
 
-Also, you should provide a Team Domain via `team_domain` option.
+Also, you should provide a Team Domain.
 
 ### Rails
 
 ```ruby
-Rails.application.config.middleware.use Rack::CloudflareJwt::Auth, team_domain: 'test.cloudflareaccess.com',
-                                                                  '/my-path-1' => 'aaa.bbb.ccc'
-                                                                  '/my-path-2' => 'xxx.yyy.zzz',
+Rails.application.config.middleware.use Rack::CloudflareJwt::Auth, 'my-team-domain.cloudflareaccess.com',
+                                                                   '/my-path-1' => 'aaa.bbb.ccc'
+                                                                   '/my-path-2' => 'xxx.yyy.zzz',
 ```
 
 ## Contributing

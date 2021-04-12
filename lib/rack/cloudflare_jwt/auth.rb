@@ -40,18 +40,17 @@ module Rack::CloudflareJwt
     # @example Initialize middleware in Rails
     #   config.middleware.use(
     #     Rack::CloudflareJwt::Auth,
-    #     team_domain:  ENV['RACK_CLOUDFLARE_JWT_TEAM_DOMAIN']
+    #     ENV['RACK_CLOUDFLARE_JWT_TEAM_DOMAIN'],
     #     '/admin'   => <cloudflare-aud-1>,
     #     '/manager' => <cloudflare-aud-2>,
     #   )
     #
-    # @param [Hash<String, String>] options the options to create a middleware.
-    # @option options [Symbol] :team_domain The Team Domain (e.g. 'test.cloudflareaccess.com')
-    # @option options [String] '<path>' The AUD for current '<path>'.
-    def initialize(app, options = {})
+    # @param team_domain [String] the Team Domain (e.g. 'test.cloudflareaccess.com').
+    # @param policies [Hash<String, String>] the policies with paths and AUDs.
+    def initialize(app, team_domain, policies = {})
       @app         = app
-      @team_domain = options.delete(:team_domain)
-      @policies    = options
+      @team_domain = team_domain
+      @policies    = policies
 
       check_policy_auds!
       check_paths_type!
