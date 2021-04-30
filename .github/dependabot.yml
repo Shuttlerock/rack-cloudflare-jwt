@@ -1,10 +1,4 @@
 version: 2
-registries:
-  rubygems-server-gem-fury-io-h-app71456489:
-    type: rubygems-server
-    url: https://gem.fury.io/h_app71456489/
-    token: "${{secrets.RUBYGEMS_SERVER_GEM_FURY_IO_H_APP71456489_TOKEN}}"
-
 updates:
 - package-ecosystem: bundler
   directory: "/"
@@ -14,5 +8,3 @@ updates:
   pull-request-branch-name:
     separator: "-"
   open-pull-requests-limit: 20
-  registries:
-  - rubygems-server-gem-fury-io-h-app71456489
