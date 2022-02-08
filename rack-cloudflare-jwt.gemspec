@@ -33,4 +33,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'multi_json'
   spec.add_runtime_dependency 'rack'
   spec.add_runtime_dependency 'rack-jwt', '>= 0.4.0'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 end
