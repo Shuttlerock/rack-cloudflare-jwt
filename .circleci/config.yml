@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: ~/rack-cloudflare-jwt
   docker:
-    - image: circleci/ruby:2.6.5
+    - image: cimg/ruby:2.6.5
       auth:
         username: $DOCKERHUB_USERNAME
         password: $DOCKERHUB_PASSWORD
