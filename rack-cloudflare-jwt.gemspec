@@ -15,7 +15,6 @@ Gem::Specification.new do |spec|
   spec.license       = 'MIT'
 
   spec.files         = Dir.glob('lib/**/*') + %w(LICENSE README.md)
-  spec.test_files    = spec.files.grep(%r{^spec/})
   spec.require_paths = ['lib']
   spec.platform      = Gem::Platform::RUBY
   spec.required_ruby_version = '>= 2.6.0'

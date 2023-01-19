@@ -123,16 +123,16 @@ describe Rack::CloudflareJwt::Auth do
     end
 
     [
-      ::JWT::DecodeError,
-      ::JWT::ExpiredSignature,
-      ::JWT::ImmatureSignature,
-      ::JWT::IncorrectAlgorithm,
-      ::JWT::InvalidAudError,
-      ::JWT::InvalidIatError,
-      ::JWT::InvalidIssuerError,
-      ::JWT::InvalidJtiError,
-      ::JWT::InvalidSubError,
-      ::JWT::VerificationError,
+      JWT::DecodeError,
+      JWT::ExpiredSignature,
+      JWT::ImmatureSignature,
+      JWT::IncorrectAlgorithm,
+      JWT::InvalidAudError,
+      JWT::InvalidIatError,
+      JWT::InvalidIssuerError,
+      JWT::InvalidJtiError,
+      JWT::InvalidSubError,
+      JWT::VerificationError,
     ].each do |error_class|
       it "raises an error at #{error_class} error" do
         allow(Rack::JWT::Token).to receive(:decode).and_raise(error_class)
