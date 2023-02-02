@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'simplecov',           '>= 0.16.0'
   spec.add_development_dependency 'webmock',             '>= 3.8.0'
 
-  spec.add_runtime_dependency 'jwt', '>= 2.2', '< 2.7'
+  spec.add_runtime_dependency 'jwt', '>= 2.2', '< 2.8'
   spec.add_runtime_dependency 'multi_json'
   spec.add_runtime_dependency 'rack'
   spec.add_runtime_dependency 'rack-jwt', '>= 0.4.0'
