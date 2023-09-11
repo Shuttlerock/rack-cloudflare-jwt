@@ -120,3 +120,6 @@ RSpec/MessageSpies:
 
 RSpec/MultipleMemoizedHelpers:
   Max: 10
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false

@@ -1,0 +1,43 @@
+name: rack-cloudflare-jwt (test)
+
+# Cancel in-progress jobs.
+concurrency:
+  group:              rack-cloudflare-jwt-${{ github.ref }}
+  cancel-in-progress: true
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      FORCE_COLOR: 1
+      RACK_ENV: test
+
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        bundler-cache: true
+        ruby-version: '3.2'
+
+    - name: Install dependencies
+      run: bundle install
+
+    - name: Docker Login
+      run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
+
+    - name: test
+      run: bundle exec rake
+
+    - name: rubocop
+      run: bundle exec rubocop
